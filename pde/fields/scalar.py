@@ -110,37 +110,35 @@ class ScalarField(DataFieldBase):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         """support unary numpy ufuncs, like np.sin, but also np.multiply"""
-        if method == "__call__":
-            # only support unary functions in simple calls
-
-            # check the input
-            arrs = []
-            for arg in inputs:
-                if isinstance(arg, numbers.Number):
-                    arrs.append(arg)
-                elif isinstance(arg, np.ndarray):
-                    if arg.shape != self.data.shape:
-                        raise RuntimeError("Data shapes incompatible")
-                    arrs.append(arg)
-                elif isinstance(arg, self.__class__):
-                    self.assert_field_compatible(arg)
-                    arrs.append(arg.data)
-                else:
-                    # unsupported type
-                    return NotImplemented
-
-            if "out" in kwargs:
-                # write to given field
-                out = kwargs.pop("out")[0]
-                self.assert_field_compatible(out)
-                kwargs["out"] = (out.data,)
-                ufunc(*arrs, **kwargs)
-                return out
-            else:
-                # return new field
-                return self.__class__(self.grid, data=ufunc(*arrs, **kwargs))
-        else:
+        if method != "__call__":
             return NotImplemented
+        # only support unary functions in simple calls
+
+        # check the input
+        arrs = []
+        for arg in inputs:
+            if isinstance(arg, numbers.Number):
+                arrs.append(arg)
+            elif isinstance(arg, np.ndarray):
+                if arg.shape != self.data.shape:
+                    raise RuntimeError("Data shapes incompatible")
+                arrs.append(arg)
+            elif isinstance(arg, self.__class__):
+                self.assert_field_compatible(arg)
+                arrs.append(arg.data)
+            else:
+                # unsupported type
+                return NotImplemented
+
+        if "out" not in kwargs:
+            # return new field
+            return self.__class__(self.grid, data=ufunc(*arrs, **kwargs))
+        # write to given field
+        out = kwargs.pop("out")[0]
+        self.assert_field_compatible(out)
+        kwargs["out"] = (out.data,)
+        ufunc(*arrs, **kwargs)
+        return out
 
     @fill_in_docstring
     def laplace(
@@ -270,7 +268,7 @@ class ScalarField(DataFieldBase):
         if method == "integral":
             subdata = self.grid.integrate(self.data, axes=ax_remove)
 
-        elif method == "average" or method == "mean":
+        elif method in {"average", "mean"}:
             integrals = self.grid.integrate(self.data, axes=ax_remove)
             volumes = self.grid.integrate(1, axes=ax_remove)
             subdata = integrals / volumes
@@ -338,25 +336,23 @@ class ScalarField(DataFieldBase):
         ax_retain = tuple(sorted(set(ax_all) - set(ax_remove)))
         subgrid = grid.get_subgrid(ax_retain)
 
-        # obtain the sliced data
-        if method == "nearest":
-            idx: List[Union[int, slice]] = []
-            for i in range(grid.num_axes):
-                if i in ax_remove:
-                    pos = pos_values[i]
-                    axis_bounds = grid.axes_bounds[i]
-                    if pos < axis_bounds[0] or pos > axis_bounds[1]:
-                        raise DomainError(
-                            f"Position {grid.axes[i]} = {pos} is outside the domain"
-                        )
-                    # add slice that is closest to pos
-                    idx.append(int(np.argmin((grid.axes_coords[i] - pos) ** 2)))
-                else:
-                    idx.append(slice(None))
-            subdata = self.data[tuple(idx)]
-
-        else:
+        if method != "nearest":
             raise ValueError(f"Unknown slicing method `{method}`")
+
+        idx: List[Union[int, slice]] = []
+        for i in range(grid.num_axes):
+            if i in ax_remove:
+                pos = pos_values[i]
+                axis_bounds = grid.axes_bounds[i]
+                if pos < axis_bounds[0] or pos > axis_bounds[1]:
+                    raise DomainError(
+                        f"Position {grid.axes[i]} = {pos} is outside the domain"
+                    )
+                # add slice that is closest to pos
+                idx.append(int(np.argmin((grid.axes_coords[i] - pos) ** 2)))
+            else:
+                idx.append(slice(None))
+        subdata = self.data[tuple(idx)]
 
         # create the new field instance
         return self.__class__(grid=subgrid, data=subdata, label=label)
@@ -385,11 +381,8 @@ class ScalarField(DataFieldBase):
         if callable(scalar):
             data = scalar(self.data)
         elif scalar == "auto":
-            if np.iscomplexobj(self.data):
-                data = np.abs(self.data)
-            else:
-                data = self.data
-        elif scalar == "abs" or scalar == "norm":
+            data = np.abs(self.data) if np.iscomplexobj(self.data) else self.data
+        elif scalar in ["abs", "norm"]:
             data = np.abs(self.data)
         elif scalar == "norm_squared":
             data = self.data * self.data.conjugate()

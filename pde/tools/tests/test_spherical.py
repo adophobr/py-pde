@@ -32,9 +32,9 @@ def test_volume_conversion_numba():
 
 def test_surface():
     """test whether the surface is calculated correctly"""
+    eps = 1e-10
     for dim in [1, 2, 3]:
         radius = 1 + random.random()
-        eps = 1e-10
         vol1 = spherical.volume_from_radius(radius + eps, dim=dim)
         vol0 = spherical.volume_from_radius(radius, dim=dim)
         surface_approx = (vol1 - vol0) / eps

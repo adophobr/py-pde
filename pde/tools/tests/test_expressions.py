@@ -213,7 +213,7 @@ def test_tensor_expression():
         e.value
     assert e[0] == ScalarExpression("a")
     assert e[1] == ScalarExpression("2*a")
-    assert e[0:1] == TensorExpression("[a]")
+    assert e[:1] == TensorExpression("[a]")
     np.testing.assert_allclose(e.get_compiled_array()(1.0), [1.0, 2.0])
     np.testing.assert_allclose(e.get_compiled_array()(2.0), [2.0, 4.0])
 

@@ -228,15 +228,15 @@ def plot_on_axes(wrapped=None, update_method=None):
         return functools.partial(plot_on_axes, update_method=update_method)
 
     def wrapper(
-        *args,
-        title: str = None,
-        filename: str = None,
-        action: str = "auto",
-        ax_style: Dict[str, Any] = None,
-        fig_style: Dict[str, Any] = None,
-        ax=None,
-        **kwargs,
-    ):
+            *args,
+            title: str = None,
+            filename: str = None,
+            action: str = "auto",
+            ax_style: Dict[str, Any] = None,
+            fig_style: Dict[str, Any] = None,
+            ax=None,
+            **kwargs,
+        ):
         """
         title (str):
             Title of the plot. If omitted, the title might be chosen
@@ -325,13 +325,7 @@ def plot_on_axes(wrapped=None, update_method=None):
 
             # decide what to do with the final plot
             if action == "auto":
-                if is_outermost_plot_call and auto_show_figure:
-                    # only call show on the outermost plot call and only in the
-                    # circumstances determined above
-                    action = "show"
-                else:
-                    action = "none"
-
+                action = "show" if is_outermost_plot_call and auto_show_figure else "none"
             if action == "show":
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -356,7 +350,7 @@ def plot_on_axes(wrapped=None, update_method=None):
     parameters = tuple(
         arg
         for name, arg in sig_wrapped.parameters.items()
-        if name != "kwargs" and name != "ax"
+        if name not in ["kwargs", "ax"]
     )
 
     sig_wrapper = inspect.signature(wrapper)
@@ -434,15 +428,15 @@ def plot_on_figure(wrapped=None, update_method=None):
         return functools.partial(plot_on_figure, update_method=update_method)
 
     def wrapper(
-        *args,
-        title: str = None,
-        constrained_layout: bool = True,
-        filename: str = None,
-        action: str = "auto",
-        fig_style: Dict[str, Any] = None,
-        fig=None,
-        **kwargs,
-    ):
+            *args,
+            title: str = None,
+            constrained_layout: bool = True,
+            filename: str = None,
+            action: str = "auto",
+            fig_style: Dict[str, Any] = None,
+            fig=None,
+            **kwargs,
+        ):
         """
         title (str):
             Title of the plot. If omitted, the title might be chosen automatically.
@@ -501,12 +495,7 @@ def plot_on_figure(wrapped=None, update_method=None):
 
             # decide what to do with the final plot
             if action == "auto":
-                if is_outermost_plot_call:
-                    # only call show on the outermost plot call
-                    action = "show"
-                else:
-                    action = "none"
-
+                action = "show" if is_outermost_plot_call else "none"
             if action == "show":
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -531,7 +520,7 @@ def plot_on_figure(wrapped=None, update_method=None):
     parameters = tuple(
         arg
         for name, arg in sig_wrapped.parameters.items()
-        if name != "kwargs" and name != "fig"
+        if name not in ["kwargs", "fig"]
     )
 
     sig_wrapper = inspect.signature(wrapper)
@@ -714,10 +703,8 @@ class JupyterPlottingContext(PlottingContextBase):
         """close the plot"""
         super().close()
         # close ipython output
-        try:
+        with contextlib.suppress(Exception):
             self._ipython_out.close()
-        except Exception:
-            pass
 
 
 def get_plotting_context(
@@ -779,8 +766,7 @@ def get_plotting_context(
 
 def in_ipython() -> bool:
     """try to detect whether we are in an ipython shell, e.g., a jupyter notebook"""
-    ipy_module = sys.modules.get("IPython")
-    if ipy_module:
+    if ipy_module := sys.modules.get("IPython"):
         return bool(ipy_module.get_ipython())
     else:
         return False
@@ -807,11 +793,7 @@ def napari_viewer(
     # initialize the viewer
     kwargs.setdefault("axis_labels", grid.axes)
     kwargs.setdefault("ndisplay", 3 if grid.num_axes >= 3 else 2)
-    viewer = napari.Viewer(**kwargs)
-
-    # allow the calling code to add content to the viewer
-    yield viewer
-
+    yield napari.Viewer(**kwargs)
     # start the napari's event loop if requested or if we're not in ipython
     if run is None:
         run = not in_ipython()

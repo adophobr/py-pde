@@ -61,7 +61,7 @@ def ensure_directory_exists(folder: Union[str, Path]):
         folder (str): path of the new folder
     """
     folder = str(folder)
-    if folder == "":
+    if not folder:
         return
     try:
         os.makedirs(folder)
@@ -113,7 +113,7 @@ def decorator_arguments(decorator: Callable) -> Callable:
 
     @functools.wraps(decorator)
     def new_decorator(*args, **kwargs):
-        if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
+        if len(args) == 1 and not kwargs and callable(args[0]):
             # actual decorated function
             return decorator(args[0])
         else:
@@ -344,10 +344,7 @@ def get_common_dtype(*args):
 
     Returns: numpy.cdouble if any entry is complex, otherwise np.double
     """
-    for arg in args:
-        if np.iscomplexobj(arg):
-            return np.cdouble
-    return np.double
+    return next((np.cdouble for arg in args if np.iscomplexobj(arg)), np.double)
 
 
 def number_array(data: ArrayLike, dtype=None, copy: bool = True) -> np.ndarray:

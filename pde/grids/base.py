@@ -201,10 +201,7 @@ class GridBase(metaclass=ABCMeta):
         """
         if isinstance(key, str):
             # determine key index from name of the axis
-            if allow_symmetric:
-                axes = self.axes + self.axes_symmetric
-            else:
-                axes = self.axes
+            axes = self.axes + self.axes_symmetric if allow_symmetric else self.axes
             if key in axes:
                 return axes.index(key)
             else:
@@ -299,7 +296,7 @@ class GridBase(metaclass=ABCMeta):
 
     def __repr__(self) -> str:
         """return instance as string"""
-        args = ", ".join(str(k) + "=" + str(v) for k, v in self.state.items())
+        args = ", ".join(f"{str(k)}={str(v)}" for k, v in self.state.items())
         return f"{self.__class__.__name__}({args})"
 
     def __eq__(self, other) -> bool:
@@ -559,10 +556,7 @@ class GridBase(metaclass=ABCMeta):
         # convert from grid coordinates to cells indices
         c_min = np.array(self.axes_bounds)[:, 0]
         cells = (coords - c_min) / self.discretization
-        if truncate:
-            return cells.astype(np.intc)  # type: ignore
-        else:
-            return cells  # type: ignore
+        return cells.astype(np.intc) if truncate else cells
 
     def transform(
         self, coordinates: np.ndarray, source: str, target: str
@@ -706,7 +700,7 @@ class GridBase(metaclass=ABCMeta):
             the grid
         """
         cell_coords = self.transform(points, source=coords, target="cell")
-        return np.all((0 <= cell_coords) & (cell_coords < self.shape), axis=-1)  # type: ignore
+        return np.all((cell_coords >= 0) & (cell_coords < self.shape), axis=-1)
 
     @abstractmethod
     def iter_mirror_points(
@@ -1011,10 +1005,7 @@ class GridBase(metaclass=ABCMeta):
             volume_list = self.cell_volume_data
         else:
             # use stored value for the default case of integrating over all axes
-            if isinstance(axes, int):
-                axes = (axes,)
-            else:
-                axes = tuple(axes)  # required for numpy.sum
+            axes = (axes, ) if isinstance(axes, int) else tuple(axes)
             volume_list = [
                 cell_vol if ax in axes else 1
                 for ax, cell_vol in enumerate(self.cell_volume_data)

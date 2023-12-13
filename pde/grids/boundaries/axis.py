@@ -320,10 +320,7 @@ class BoundaryPair(BoundaryAxisBase):
         return f"{self.__class__.__name__}({self.low!r}, {self.high!r})"
 
     def __str__(self):
-        if self.low == self.high:
-            return str(self.low)
-        else:
-            return f"({self.low}, {self.high})"
+        return str(self.low) if self.low == self.high else f"({self.low}, {self.high})"
 
     def _cache_hash(self) -> int:
         """returns a value to determine when a cache needs to be updated"""
@@ -363,25 +360,19 @@ class BoundaryPair(BoundaryAxisBase):
             ValueError if `data` cannot be interpreted as a boundary pair
         """
         # handle the simple cases
-        if isinstance(data, dict):
-            if "low" in data or "high" in data:
-                # separate conditions for low and high
-                data_copy = data.copy()
-                low = BCBase.from_data(
-                    grid, axis, upper=False, data=data_copy.pop("low"), rank=rank
-                )
-                high = BCBase.from_data(
-                    grid, axis, upper=True, data=data_copy.pop("high"), rank=rank
-                )
-                if data_copy:
-                    raise BCDataError(f"Data items {data_copy.keys()} were not used.")
-            else:
-                # one condition for both sides
-                low = BCBase.from_data(grid, axis, upper=False, data=data, rank=rank)
-                high = BCBase.from_data(grid, axis, upper=True, data=data, rank=rank)
-
-        elif isinstance(data, (str, BCBase)):
-            # a type for both boundaries
+        if isinstance(data, dict) and ("low" in data or "high" in data):
+            # separate conditions for low and high
+            data_copy = data.copy()
+            low = BCBase.from_data(
+                grid, axis, upper=False, data=data_copy.pop("low"), rank=rank
+            )
+            high = BCBase.from_data(
+                grid, axis, upper=True, data=data_copy.pop("high"), rank=rank
+            )
+            if data_copy:
+                raise BCDataError(f"Data items {data_copy.keys()} were not used.")
+        elif isinstance(data, (dict, str, BCBase)):
+            # one condition for both sides
             low = BCBase.from_data(grid, axis, upper=False, data=data, rank=rank)
             high = BCBase.from_data(grid, axis, upper=True, data=data, rank=rank)
 
@@ -393,9 +384,7 @@ class BoundaryPair(BoundaryAxisBase):
                 data_len = len(data)
             except TypeError:
                 # if len is not supported, the format must be wrong
-                raise BCDataError(
-                    f"Unsupported boundary format: `{data}`. " + cls.get_help()
-                )
+                raise BCDataError(f"Unsupported boundary format: `{data}`. {cls.get_help()}")
             else:
                 if data_len == 2:
                     # assume that data is given for each boundary
@@ -463,16 +452,10 @@ class BoundaryPeriodic(BoundaryPair):
 
     def __repr__(self):
         res = f"{self.__class__.__name__}(grid={self.grid}, axis={self.axis}"
-        if self.flip_sign:
-            return res + ", flip_sign=True)"
-        else:
-            return res + ")"
+        return f"{res}, flip_sign=True)" if self.flip_sign else f"{res})"
 
     def __str__(self):
-        if self.flip_sign:
-            return '"anti-periodic"'
-        else:
-            return '"periodic"'
+        return '"anti-periodic"' if self.flip_sign else '"periodic"'
 
     def _cache_hash(self) -> int:
         """returns a value to determine when a cache needs to be updated"""
@@ -520,7 +503,7 @@ def get_boundary_axis(
             Appropriate boundary condition for the axis
     """
     # handle special constructs that describe boundary conditions
-    if data == "natural" or data == "auto_periodic_neumann":
+    if data in ["natural", "auto_periodic_neumann"]:
         # automatic choice between periodic and Neumann condition
         data = "periodic" if grid.periodic[axis] else "derivative"
     elif data == "auto_periodic_dirichlet":
@@ -531,10 +514,10 @@ def get_boundary_axis(
     if isinstance(data, BoundaryAxisBase):
         # boundary is already an the correct format
         return data
-    elif data == "periodic" or data == ("periodic", "periodic"):
+    elif data in ["periodic", ("periodic", "periodic")]:
         # initialize a periodic boundary condition
         return BoundaryPeriodic(grid, axis)
-    elif data == "anti-periodic" or data == ("anti-periodic", "anti-periodic"):
+    elif data in ["anti-periodic", ("anti-periodic", "anti-periodic")]:
         # initialize a anti-periodic boundary condition
         return BoundaryPeriodic(grid, axis, flip_sign=True)
     elif isinstance(data, dict) and data.get("type") == "periodic":

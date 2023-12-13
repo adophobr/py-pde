@@ -244,7 +244,7 @@ class CartesianGrid(GridBase):  # lgtm [py/missing-equals]
         # create random point
         point = cuboid.pos + rng.random(self.dim) * cuboid.size
 
-        if coords == "cartesian" or coords == "grid":
+        if coords in {"cartesian", "grid"}:
             return point  # type: ignore
         elif coords == "cell":
             return self.transform(point, "grid", "cell")
@@ -416,25 +416,23 @@ class CartesianGrid(GridBase):  # lgtm [py/missing-equals]
         diff = self.difference_vector_real(origin, self.cell_coords)
         dist: np.ndarray = np.linalg.norm(diff, axis=-1)  # get distance
 
-        # determine distance and optionally angles for these vectors
-        if ret_angle:
-            if self.dim == 1:
-                return dist, np.sign(diff)[..., 0]  # type: ignore
-
-            elif self.dim == 2:
-                return dist, np.arctan2(diff[:, :, 0], diff[:, :, 1])  # type: ignore
-
-            elif self.dim == 3:
-                theta = np.arccos(diff[..., 2] / dist)
-                phi = np.arctan2(diff[..., 0], diff[..., 1])
-                return dist, theta, phi
-
-            else:
-                raise NotImplementedError(
-                    f"Cannot calculate angles for dimension {self.dim}"
-                )
-        else:
+        if not ret_angle:
             return dist
+        if self.dim == 1:
+            return dist, np.sign(diff)[..., 0]  # type: ignore
+
+        elif self.dim == 2:
+            return dist, np.arctan2(diff[:, :, 0], diff[:, :, 1])  # type: ignore
+
+        elif self.dim == 3:
+            theta = np.arccos(diff[..., 2] / dist)
+            phi = np.arctan2(diff[..., 0], diff[..., 1])
+            return dist, theta, phi
+
+        else:
+            raise NotImplementedError(
+                f"Cannot calculate angles for dimension {self.dim}"
+            )
 
     def from_polar_coordinates(
         self, distance: np.ndarray, angle: np.ndarray, origin: np.ndarray = None
@@ -458,11 +456,7 @@ class CartesianGrid(GridBase):  # lgtm [py/missing-equals]
         """
         distance = np.asarray(distance)
         angle = np.asarray(angle)
-        if origin is None:
-            origin = np.zeros(self.dim)
-        else:
-            origin = np.atleast_1d(origin)
-
+        origin = np.zeros(self.dim) if origin is None else np.atleast_1d(origin)
         if self.dim == 1:
             diff = distance * angle
             coords = origin + diff[..., None]

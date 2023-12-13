@@ -125,10 +125,7 @@ if nb.config.DISABLE_JIT:
     # use work-around for https://github.com/numba/numba/issues/4759
     def flat_idx(arr, i):
         """helper function allowing indexing of scalars as if they arrays"""
-        if np.isscalar(arr):
-            return arr
-        else:
-            return arr.flat[i]
+        return arr if np.isscalar(arr) else arr.flat[i]
 
 else:
     # compiled version that specializes correctly
@@ -246,7 +243,7 @@ def jit_allocate_out(
         # jitting is enabled => return specific compiled functions
         jit_kwargs_outer = _get_jit_args(nopython=True, parallel=False, **kwargs)
         # we need to cast `parallel` to bool since np.bool is not supported by jit
-        jit_kwargs_inner = _get_jit_args(parallel=bool(parallel), **kwargs)
+        jit_kwargs_inner = _get_jit_args(parallel=parallel, **kwargs)
         logging.getLogger(__name__).info(
             "Compile `%s` with %s", func.__name__, jit_kwargs_inner
         )
@@ -292,18 +289,15 @@ def jit_allocate_out(
                     return f_with_allocated_out
 
                 else:
-                    # function is called with `out` argument
                     if out_shape is None:
                         return f_jit
 
-                    else:
+                    def f_with_tested_out(arr, out=None, args=None):
+                        """helper function allocating output array"""
+                        assert out.shape == out_shape
+                        return f_jit(arr, out, args=args)
 
-                        def f_with_tested_out(arr, out=None, args=None):
-                            """helper function allocating output array"""
-                            assert out.shape == out_shape
-                            return f_jit(arr, out, args=args)
-
-                        return f_with_tested_out
+                    return f_with_tested_out
 
         elif num_args == 2:
 

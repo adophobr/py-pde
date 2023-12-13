@@ -148,5 +148,5 @@ class ImplicitSolver(SolverBase):
             self.info["function_evaluations"] += nfev
             return t_last
 
-        self._logger.info(f"Initialized implicit Euler stepper with dt=%g", dt)
+        self._logger.info("Initialized implicit Euler stepper with dt=%g", dt)
         return stepper

@@ -378,11 +378,7 @@ class Tensor2Field(DataFieldBase):
         Returns:
             :class:`~pde.fields.tensorial.Tensor2Field`: result of the operation
         """
-        if inplace:
-            out = self
-        else:
-            out = self.copy()
-
+        out = self if inplace else self.copy()
         out += self.transpose()
         out *= 0.5
 
@@ -445,7 +441,7 @@ class Tensor2Field(DataFieldBase):
         elif scalar == "norm_squared":
             data = np.sum(self.data * self.data.conjugate(), axis=(0, 1))
 
-        elif scalar == "trace" or scalar == "invariant1":
+        elif scalar in {"trace", "invariant1"}:
             data = self.data.trace(axis1=0, axis2=1)
 
         elif scalar == "invariant2":
@@ -539,7 +535,7 @@ class Tensor2Field(DataFieldBase):
         kwargs.setdefault("action", "none")
         kwargs["kind"] = kind
         comps = self.grid.axes + self.grid.axes_symmetric
-        references = [
+        return [
             [
                 self[i, j].plot(
                     ax=axs[i][j],
@@ -550,5 +546,3 @@ class Tensor2Field(DataFieldBase):
             ]
             for i in range(dim)
         ]
-        # return the references for all subplots
-        return references

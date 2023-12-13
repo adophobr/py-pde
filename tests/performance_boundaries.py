@@ -30,18 +30,18 @@ def main():
         result = field.laplace(bc={"value": 1}).data
 
         for bc in ["scalar", "array", "function", "time-dependent", "linked"]:
-            if bc == "scalar":
-                bcs = {"value": 1}
-            elif bc == "array":
+            if bc == "array":
                 bcs = {"value": bc_value}
             elif bc == "function":
                 bcs = grid.get_boundary_conditions({"virtual_point": "2 - value"})
-            elif bc == "time-dependent":
-                bcs = grid.get_boundary_conditions({"value_expression": "t"})
             elif bc == "linked":
                 bcs = grid.get_boundary_conditions({"value": bc_value})
                 for ax, upper in grid._iter_boundaries():
                     bcs[ax][upper].link_value(bc_value)
+            elif bc == "scalar":
+                bcs = {"value": 1}
+            elif bc == "time-dependent":
+                bcs = grid.get_boundary_conditions({"value_expression": "t"})
             else:
                 raise RuntimeError
 

@@ -52,7 +52,7 @@ class MemoryStorage(StorageBase):
             self._data_shape = field_obj.data.shape
 
         self.data: List[np.ndarray] = [] if data is None else data
-        if self._data_shape is None and len(self.data) > 0:
+        if self._data_shape is None and self.data:
             self._data_shape = self.data[0].shape
 
         # check consistency

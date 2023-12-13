@@ -445,12 +445,7 @@ def make_laplace(grid: CartesianGrid, backend: str = "auto") -> OperatorType:
     dim = grid.dim
 
     if backend == "auto":
-        # choose the fastest available Laplace operator
-        if 1 <= dim <= 3:
-            backend = "numba"
-        else:
-            backend = "scipy"
-
+        backend = "numba" if 1 <= dim <= 3 else "scipy"
     if backend == "numba":
         if dim == 1:
             laplace = _make_laplace_numba_1d(grid)
@@ -608,12 +603,7 @@ def make_gradient(grid: CartesianGrid, backend: str = "auto") -> OperatorType:
     dim = grid.dim
 
     if backend == "auto":
-        # choose the fastest available gradient operator
-        if 1 <= dim <= 3:
-            backend = "numba"
-        else:
-            backend = "scipy"
-
+        backend = "numba" if 1 <= dim <= 3 else "scipy"
     if backend == "numba":
         if dim == 1:
             gradient = _make_gradient_numba_1d(grid)
@@ -962,12 +952,7 @@ def make_divergence(grid: CartesianGrid, backend: str = "auto") -> OperatorType:
     dim = grid.dim
 
     if backend == "auto":
-        # choose the fastest available divergence operator
-        if 1 <= dim <= 3:
-            backend = "numba"
-        else:
-            backend = "scipy"
-
+        backend = "numba" if 1 <= dim <= 3 else "scipy"
     if backend == "numba":
         if dim == 1:
             divergence = _make_divergence_numba_1d(grid)

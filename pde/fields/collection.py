@@ -70,17 +70,13 @@ class FieldCollection(FieldBase):
             raise RuntimeError(f"Grids are incompatible: {grids}")
 
         # check whether some fields are identical
-        if not copy_fields and len(fields) != len(set(id(field) for field in fields)):
+        if not copy_fields and len(fields) != len({id(field) for field in fields}):
             self._logger = logging.getLogger(self.__class__.__name__)
             self._logger.warning("Creating a copy of identical fields in collection")
             copy_fields = True
 
         # create the list of underlying fields
-        if copy_fields:
-            self._fields = [field.copy() for field in fields]
-        else:
-            self._fields = fields  # type: ignore
-
+        self._fields = [field.copy() for field in fields] if copy_fields else fields
         # extract data from individual fields
         fields_data: List[np.ndarray] = []
         self._slices: List[slice] = []
@@ -412,16 +408,15 @@ class FieldCollection(FieldBase):
         Returns:
             dict: The unserialized attributes
         """
-        results = {}
-        for key, value in attributes.items():
-            if key == "fields":
-                results[key] = [
-                    FieldBase.unserialize_attributes(attrs)
-                    for attrs in json.loads(value)
-                ]
-            else:
-                results[key] = json.loads(value)
-        return results
+        return {
+            key: [
+                FieldBase.unserialize_attributes(attrs)
+                for attrs in json.loads(value)
+            ]
+            if key == "fields"
+            else json.loads(value)
+            for key, value in attributes.items()
+        }
 
     def copy(
         self: FieldCollection,
@@ -671,16 +666,12 @@ class FieldCollection(FieldBase):
         if isinstance(kind, str):
             kind = [kind] * len(self.fields)
 
-        # plot all the elements onto the respective axes
-        reference = [
+        return [
             field.plot(kind=knd, ax=ax, action="none", **kwargs, **sp_args)
             for field, knd, ax, sp_args in zip(  # @UnusedVariable
                 self.fields, kind, axs, subplot_args
             )
         ]
-
-        # return the references for all subplots
-        return reference
 
     def _get_napari_data(self, **kwargs) -> Dict[str, Dict[str, Any]]:
         r"""returns data for plotting all fields

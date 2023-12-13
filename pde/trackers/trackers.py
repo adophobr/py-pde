@@ -155,10 +155,7 @@ class ProgressTracker(TrackerBase):
                 The associated time
         """
         # show an update
-        if self.progress_bar.total:
-            t_new = min(t, self.progress_bar.total)
-        else:
-            t_new = t
+        t_new = min(t, self.progress_bar.total) if self.progress_bar.total else t
         self.progress_bar.n = round(t_new, self.ndigits)
         self.progress_bar.set_description("")
 
@@ -334,10 +331,7 @@ class PlotTracker(TrackerBase):
 
         # determine whether to show the images interactively
         self._write_images = self._save_movie or self.output_file
-        if show is None:
-            self.show = not self._write_images
-        else:
-            self.show = show
+        self.show = not self._write_images if show is None else show
 
     def initialize(self, state: FieldBase, info: InfoDict = None) -> float:
         """initialize the tracker with information about the simulation
@@ -361,27 +355,25 @@ class PlotTracker(TrackerBase):
             self._plot_reference = state.plot(**self.plot_args)
 
         if self._context.supports_update:
-            # the context supports reusing figures
-            if hasattr(state.plot, "update_method"):
-                # the plotting method supports updating the plot
-                if state.plot.update_method is None:  # type: ignore
-                    if state.plot.mpl_class == "axes":  # type: ignore
-                        self._update_method = "update_ax"
-                    elif state.plot.mpl_class == "figure":  # type: ignore
-                        self._update_method = "update_fig"
-                    else:
-                        mpl_class = state.plot.mpl_class  # type: ignore
-                        raise RuntimeError(
-                            f"Unknown mpl_class on plot method: {mpl_class}"
-                        )
-                else:
-                    self._update_method = "update_data"
-            else:
+            if not hasattr(state.plot, "update_method"):
                 raise RuntimeError(
                     "PlotTracker does not  work since the state of type "
                     f"{state.__class__.__name__} does not use the plot protocol of "
                     "`pde.tools.plotting`."
                 )
+            # the plotting method supports updating the plot
+            if state.plot.update_method is None:  # type: ignore
+                if state.plot.mpl_class == "axes":  # type: ignore
+                    self._update_method = "update_ax"
+                elif state.plot.mpl_class == "figure":  # type: ignore
+                    self._update_method = "update_fig"
+                else:
+                    mpl_class = state.plot.mpl_class  # type: ignore
+                    raise RuntimeError(
+                        f"Unknown mpl_class on plot method: {mpl_class}"
+                    )
+            else:
+                self._update_method = "update_data"
         else:
             self._update_method = "replot"
 
@@ -877,7 +869,7 @@ class MaterialConservationTracker(TrackerBase):
             if isinstance(field, FieldCollection):
                 msg = f"Material of field {np.flatnonzero(~c)} is not conserved"
             else:
-                msg = f"Material is not conserved"
+                msg = "Material is not conserved"
             raise StopIteration(msg)
 
 

@@ -19,8 +19,8 @@ def test_config():
     assert c["numba.parallel_threshold"] > 0
 
     assert "numba.parallel_threshold" in c
-    assert any("numba.parallel_threshold" == k for k in c)
-    assert any("numba.parallel_threshold" == k and v > 0 for k, v in c.items())
+    assert any(k == "numba.parallel_threshold" for k in c)
+    assert any(k == "numba.parallel_threshold" and v > 0 for k, v in c.items())
     assert "numba.parallel_threshold" in c.to_dict()
     assert isinstance(repr(c), str)
 

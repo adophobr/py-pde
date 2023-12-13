@@ -43,7 +43,7 @@ def test_example(path):
 
     # run the actual test in a separate python process
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(PACKAGE_PATH) + ":" + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = f"{str(PACKAGE_PATH)}:" + env.get("PYTHONPATH", "")
     proc = sp.Popen([sys.executable, path], env=env, stdout=sp.PIPE, stderr=sp.PIPE)
     try:
         outs, errs = proc.communicate(timeout=30)
@@ -58,7 +58,7 @@ def test_example(path):
         pass
 
     # prepare output
-    msg = "Script `%s` failed with following output:" % path
+    msg = f"Script `{path}` failed with following output:"
     if outs:
         msg = "%s\nSTDOUT:\n%s" % (msg, outs)
     if errs:
@@ -77,7 +77,7 @@ def test_jupyter_notebooks(path, tmp_path):
 
     # adjust python environment
     my_env = os.environ.copy()
-    my_env["PYTHONPATH"] = str(PACKAGE_PATH) + ":" + my_env.get("PYTHONPATH", "")
+    my_env["PYTHONPATH"] = f"{str(PACKAGE_PATH)}:" + my_env.get("PYTHONPATH", "")
 
     outfile = tmp_path / os.path.basename(path)
     sp.check_call(

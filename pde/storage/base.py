@@ -130,10 +130,7 @@ class StorageBase(metaclass=ABCMeta):
     @property
     def shape(self) -> Optional[Tuple[int, ...]]:
         """the shape of the stored data"""
-        if self._data_shape:
-            return (len(self),) + self._data_shape
-        else:
-            return None
+        return (len(self),) + self._data_shape if self._data_shape else None
 
     @property
     def has_collection(self) -> bool:

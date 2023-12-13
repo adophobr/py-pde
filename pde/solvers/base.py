@@ -114,7 +114,7 @@ class SolverBase(metaclass=ABCMeta):
         """
         if self.pde.is_sde:
             raise RuntimeError(
-                f"Cannot create a deterministic stepper for a stochastic equation"
+                "Cannot create a deterministic stepper for a stochastic equation"
             )
 
         rhs = self.pde.make_pde_rhs(state, backend=backend)

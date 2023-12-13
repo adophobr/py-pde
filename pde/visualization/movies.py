@@ -61,7 +61,7 @@ class Movie:
                 :class:`matplotlib.animation.FFMpegWriter`. Here, we can for instance
                 set the bit rate of the resulting video using the `bitrate` parameter.
         """
-        self.filename = str(filename)
+        self.filename = filename
         self.framerate = framerate
         self.dpi = dpi
         self.kwargs = kwargs
@@ -171,9 +171,9 @@ def movie_scalar(
     """
     quantities = [{"title": "Concentration", "source": None}]
     if extras:
-        for key, value in extras.items():
-            quantities.append({"title": key, "source": value})
-
+        quantities.extend(
+            {"title": key, "source": value} for key, value in extras.items()
+        )
     # initialize the plot with the first data point
     plot = ScalarFieldPlot.from_storage(
         storage, quantities=quantities, scale=scale, tight=tight, show=show

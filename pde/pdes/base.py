@@ -74,10 +74,7 @@ class PDEBase(metaclass=ABCMeta):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._cache: Dict[str, Any] = {}
         self.noise = np.asanyarray(noise)
-        if rng is None:
-            self.rng = np.random.default_rng()
-        else:
-            self.rng = rng
+        self.rng = np.random.default_rng() if rng is None else rng
 
     @property
     def is_sde(self) -> bool:
@@ -286,11 +283,7 @@ class PDEBase(metaclass=ABCMeta):
             elif isinstance(state, FieldCollection):
                 # different noise strengths, assuming one for each field
                 for f, n in zip(result, np.broadcast_to(self.noise, len(state))):  # type: ignore
-                    if n == 0:
-                        f.data = 0
-                    else:
-                        f.data = self.rng.normal(scale=n, size=f.data.shape)
-
+                    f.data = 0 if n == 0 else self.rng.normal(scale=n, size=f.data.shape)
             else:
                 # different noise strengths, but a single field
                 raise RuntimeError(
@@ -391,24 +384,21 @@ class PDEBase(metaclass=ABCMeta):
         This method implements caching and checking of the actual method, which is
         defined by overwriting the method `_make_pde_rhs_numba`.
         """
-        if self.cache_rhs:
-            # support caching of the noise term
-            grid_state = state.grid.state_serialized
-            if self._cache.get("sde_rhs_numba_state") == grid_state:
-                # cache was successful
-                self._logger.info("Use compiled noise term from cache")
-            else:
-                # cache was not hit
-                self._logger.info("Write compiled noise term to cache")
-                self._cache["sde_rhs_numba_state"] = grid_state
-                self._cache["sde_rhs_numba"] = self._make_sde_rhs_numba(state)
-            sde_rhs = self._cache["sde_rhs_numba"]
-
-        else:
+        if not self.cache_rhs:
             # caching was skipped
-            sde_rhs = self._make_sde_rhs_numba(state)
+            return self._make_sde_rhs_numba(state)
 
-        return sde_rhs  # type: ignore
+        # support caching of the noise term
+        grid_state = state.grid.state_serialized
+        if self._cache.get("sde_rhs_numba_state") == grid_state:
+            # cache was successful
+            self._logger.info("Use compiled noise term from cache")
+        else:
+            # cache was not hit
+            self._logger.info("Write compiled noise term to cache")
+            self._cache["sde_rhs_numba_state"] = grid_state
+            self._cache["sde_rhs_numba"] = self._make_sde_rhs_numba(state)
+        return self._cache["sde_rhs_numba"]
 
     def make_sde_rhs(
         self, state: FieldBase, backend: str = "auto"
@@ -573,11 +563,11 @@ def expr_prod(factor: float, expression: str) -> str:
     Returns:
         str: The expression with the factor appended if necessary
     """
-    if factor == 0:
+    if factor == -1:
+        return f"-{expression}"
+    elif factor == 0:
         return "0"
     elif factor == 1:
         return expression
-    elif factor == -1:
-        return "-" + expression
     else:
         return f"{factor:g} * {expression}"

@@ -26,12 +26,11 @@ def deep_getsizeof(obj, ids=None):
     Function modified from
     https://code.tutsplus.com/tutorials/understand-how-much-memory-your-python-objects-use--cms-25609
     """
-    if ids is not None:
-        if id(obj) in ids:
-            return 0
-    else:
+    if ids is None:
         ids = set()
 
+    elif id(obj) in ids:
+        return 0
     r = sys.getsizeof(obj)
     ids.add(id(obj))
 
@@ -49,12 +48,7 @@ def deep_getsizeof(obj, ids=None):
         # collection that is neither a string nor a mapping
         return r + sum(deep_getsizeof(x, ids) for x in obj)
 
-    if hasattr(obj, "__dict__"):
-        # custom object
-        return r + deep_getsizeof(obj.__dict__, ids)
-
-    # basic object: neither of the above
-    return r
+    return r + deep_getsizeof(obj.__dict__, ids) if hasattr(obj, "__dict__") else r
 
 
 def test_objects_equal():
@@ -333,7 +327,7 @@ def test_method_cache(serializer, cache_factory):
     for k, obj in enumerate([obj1, obj2, obj1]):
 
         # clear the cache before the first and the last pass
-        if k == 0 or k == 2:
+        if k in [0, 2]:
             CacheTest.cached.clear_cache_of_obj(obj)
             CacheTest.cached_kwarg.clear_cache_of_obj(obj)
             obj.counter = 0
@@ -367,7 +361,7 @@ def test_method_cache(serializer, cache_factory):
                     assert method(1) == 1
                     assert obj.counter == 3
                 else:
-                    raise ValueError("Unknown cache_factory `%s`" % cache_factory)
+                    raise ValueError(f"Unknown cache_factory `{cache_factory}`")
 
                 obj.counter = 0
                 # clear cache to test the second run
