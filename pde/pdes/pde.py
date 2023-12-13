@@ -230,8 +230,8 @@ class PDE(PDEBase):
             # determine boundary conditions for this operator and variable
             for bc_key, bc in self.bcs.items():
                 bc_var, bc_func = bc_key.split(":")
-                var_match = bc_var == var or bc_var == "*"
-                func_match = bc_func == func or bc_func == "*"
+                var_match = bc_var in [var, "*"]
+                func_match = bc_func in [func, "*"]
                 if var_match and func_match:
                     break  # found a matching boundary condition
             else:
@@ -500,8 +500,8 @@ class PDE(PDEBase):
         get_data_tuple = cache["get_data_tuple"]
 
         def chain(
-            i: int = 0, inner: Callable[[np.ndarray, float, np.ndarray], None] = None
-        ) -> Callable[[np.ndarray, float], np.ndarray]:
+                i: int = 0, inner: Callable[[np.ndarray, float, np.ndarray], None] = None
+            ) -> Callable[[np.ndarray, float], np.ndarray]:
             """recursive helper function for applying all rhs"""
             # run through all functions
             rhs = rhs_list[i]
@@ -522,17 +522,16 @@ class PDE(PDEBase):
             if i < num_fields - 1:
                 # there are more items in the chain
                 return chain(i + 1, inner=wrap)
-            else:
-                # this is the outermost function
-                @jit
-                def evolution_rate(state_data: np.ndarray, t: float = 0) -> np.ndarray:
-                    out = np.empty(data_shape)
-                    with nb.objmode():
-                        data_tpl = get_data_tuple(state_data)
-                        wrap(data_tpl, t, out)
-                    return out
+            # this is the outermost function
+            @jit
+            def evolution_rate(state_data: np.ndarray, t: float = 0) -> np.ndarray:
+                out = np.empty(data_shape)
+                with nb.objmode():
+                    data_tpl = get_data_tuple(state_data)
+                    wrap(data_tpl, t, out)
+                return out
 
-                return evolution_rate  # type: ignore
+            return evolution_rate  # type: ignore
 
         # compile the recursive chain
         return chain()

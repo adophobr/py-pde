@@ -195,8 +195,10 @@ def write_requirements_py(path: Path, requirements: List[Requirement]):
             raise ValueError("Could not find the token 'GENERATED CODE'")
 
     # add generated code
-    for r in sorted(requirements, key=lambda r: r.name.lower()):
-        content.append(f'check_package_version("{r.name}", "{r.version}")\n')
+    content.extend(
+        f'check_package_version("{r.name}", "{r.version}")\n'
+        for r in sorted(requirements, key=lambda r: r.name.lower())
+    )
     content.append("del check_package_version\n")
 
     # write content back to file

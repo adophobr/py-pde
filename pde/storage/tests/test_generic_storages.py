@@ -51,7 +51,7 @@ def test_storage_write(tmp_path):
             storage.end_writing()
 
         np.testing.assert_allclose(
-            storage.times, np.arange(3), err_msg="storage class: " + name
+            storage.times, np.arange(3), err_msg=f"storage class: {name}"
         )
 
 

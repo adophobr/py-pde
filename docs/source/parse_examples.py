@@ -17,9 +17,9 @@ def main():
 
     # iterate over all examples
     for path_in in INPUT.glob("*.py"):
-        path_out = OUTPUT / (path_in.stem + ".rst")
+        path_out = OUTPUT / f"{path_in.stem}.rst"
         print(f"Found example {path_in}")
-        with path_in.open("r") as file_in, path_out.open("w") as file_out:
+        with (path_in.open("r") as file_in, path_out.open("w") as file_out):
             # write the header for the rst file
             file_out.write(".. code-block:: python\n\n")
 
@@ -30,7 +30,7 @@ def main():
                 if header and (line.startswith("#") or len(line.strip()) == 0):
                     continue
                 header = False  # first real line was reached
-                file_out.write("    " + line)
+                file_out.write(f"    {line}")
 
 
 if __name__ == "__main__":

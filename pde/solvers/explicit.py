@@ -96,9 +96,7 @@ class ExplicitSolver(SolverBase):
                 return t + dt, modifications
 
             self.info["stochastic"] = True
-            self._logger.info(
-                f"Initialized explicit Euler-Maruyama stepper with dt=%g", dt
-            )
+            self._logger.info("Initialized explicit Euler-Maruyama stepper with dt=%g", dt)
 
         else:
             # handle deterministic version of the pde
@@ -119,7 +117,7 @@ class ExplicitSolver(SolverBase):
 
             self.info["stochastic"] = False
             self.info["adaptive"] = False
-            self._logger.info(f"Initialized explicit Euler stepper with dt=%g", dt)
+            self._logger.info("Initialized explicit Euler stepper with dt=%g", dt)
 
         return stepper
 
@@ -263,7 +261,7 @@ class ExplicitSolver(SolverBase):
 
             return t + dt, modifications
 
-        self._logger.info(f"Initialized explicit Runge-Kutta-45 stepper with dt=%g", dt)
+        self._logger.info("Initialized explicit Runge-Kutta-45 stepper with dt=%g", dt)
 
         return stepper
 

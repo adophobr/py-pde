@@ -205,9 +205,9 @@ def test_field_labels():
     assert str(fc.labels) == str(["c", "b"])
     assert repr(fc.labels) == repr(["c", "b"])
 
-    assert fc.labels[0:1] == ["c"]
+    assert fc.labels[:1] == ["c"]
     assert fc.labels[:] == ["c", "b"]
-    fc.labels[0:1] = "d"
+    fc.labels[:1] = "d"
     assert fc.labels == ["d", "b"]
 
     fc.labels[:] = "a"

@@ -90,7 +90,7 @@ class CylindricalSymGrid(GridBase):  # lgtm [py/missing-equals]
             raise ValueError(
                 "Lower and upper value of the axial coordinate must be specified"
             )
-        self._periodic_z: bool = bool(periodic_z)  # might cast from np.bool_
+        self._periodic_z: bool = periodic_z
         self.periodic = [False, self._periodic_z]
 
         # radial discretization
@@ -238,19 +238,19 @@ class CylindricalSymGrid(GridBase):  # lgtm [py/missing-equals]
         if extract == "auto":
             extract = "cut_axial"
 
-        if extract == "cut_z" or extract == "cut_axial":
+        if extract in {"cut_z", "cut_axial"}:
             # do a cut along the z axis for r=0
             axis = 1
             data_y = data[..., 0, :]
             label_y = "Cut along z"
 
-        elif extract == "project_z" or extract == "project_axial":
+        elif extract in {"project_z", "project_axial"}:
             # project on the axial coordinate (average radially)
             axis = 1
             data_y = (data.mean(axis=-2),)
             label_y = "Projection onto z"
 
-        elif extract == "project_r" or extract == "project_radial":
+        elif extract in {"project_r", "project_radial"}:
             # project on the radial coordinate (average axially)
             axis = 0
             data_y = (data.mean(axis=-1),)
@@ -390,10 +390,7 @@ class CylindricalSymGrid(GridBase):  # lgtm [py/missing-equals]
         diff = self.difference_vector_real(np.array([0, origin[2]]), self.cell_coords)
         dist: np.ndarray = np.linalg.norm(diff, axis=-1)  # get distance
 
-        if ret_angle:
-            return dist, np.arctan2(diff[:, :, 0], diff[:, :, 1])
-        else:
-            return dist
+        return (dist, np.arctan2(diff[:, :, 0], diff[:, :, 1])) if ret_angle else dist
 
     @fill_in_docstring
     def get_boundary_conditions(
@@ -460,7 +457,7 @@ class CylindricalSymGrid(GridBase):  # lgtm [py/missing-equals]
             :class:`~pde.grids.spherical.PolarSymGrid`: The subgrid
         """
         if len(indices) != 1:
-            raise ValueError(f"Can only get sub-grid for one axis.")
+            raise ValueError("Can only get sub-grid for one axis.")
 
         if indices[0] == 0:
             # return a radial grid

@@ -36,7 +36,7 @@ class ConstantIntervals:
                 This argument can be used for an initial equilibration period
                 during which no data is recorded.
         """
-        self.dt = float(dt)
+        self.dt = dt
         self.t_start = t_start
         self._t_next: Optional[float] = None  # next time it should be called
 
@@ -56,10 +56,7 @@ class ConstantIntervals:
         Returns:
             float: The first time the tracker needs to handle data
         """
-        if self.t_start is None:
-            self._t_next = t
-        else:
-            self._t_next = max(t, self.t_start)
+        self._t_next = t if self.t_start is None else max(t, self.t_start)
         return self._t_next
 
     def next(self, t: float) -> float:
@@ -105,7 +102,7 @@ class LogarithmicIntervals(ConstantIntervals):
                 during which no data is recorded.
         """
         super().__init__(dt=dt_initial / factor, t_start=t_start)
-        self.factor = float(factor)
+        self.factor = factor
 
     def __repr__(self):
         return (

@@ -135,7 +135,7 @@ def run_unit_tests(
     """
     # modify current environment
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(PACKAGE_PATH) + ":" + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = f"{str(PACKAGE_PATH)}:" + env.get("PYTHONPATH", "")
     env["MPLBACKEND"] = "agg"
     if nojit:
         env["NUMBA_DISABLE_JIT"] = "1"
@@ -173,7 +173,7 @@ def run_unit_tests(
 
     # run only a subset of the tests?
     if pattern is not None:
-        args.extend(["-k", str(pattern)])
+        args.extend(["-k", pattern])
 
     # add coverage attributes?
     if coverage:

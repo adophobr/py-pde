@@ -305,7 +305,7 @@ class ExpressionBase(metaclass=ABCMeta):
 
         else:
             # general expressions might have a variable
-            args = set(str(s).split("[")[0] for s in self._free_symbols)
+            args = {str(s).split("[")[0] for s in self._free_symbols}
             if signature is None:
                 # create signature from arguments
                 signature = list(sorted(args))
@@ -342,8 +342,7 @@ class ExpressionBase(metaclass=ABCMeta):
                     found.add(arg)
                     break
 
-        args = set(args) - found
-        if len(args) > 0:
+        if args := set(args) - found:
             raise RuntimeError(
                 f"Arguments {args} were not defined in expression signature {signature}"
             )
@@ -418,10 +417,7 @@ class ExpressionBase(metaclass=ABCMeta):
             user_functions = {k: compile_func(v) for k, v in user_functions.items()}
 
         # initialize the printer that deals with numpy arrays correctly
-        if prepare_compilation:
-            printer_class: Type[PythonCodePrinter] = ListArrayPrinter
-        else:
-            printer_class = NumpyArrayPrinter
+        printer_class = ListArrayPrinter if prepare_compilation else NumpyArrayPrinter
         printer = printer_class(
             {
                 "fully_qualified_modules": False,
@@ -851,7 +847,7 @@ class TensorExpression(ExpressionBase):
                 or whether they are supplied individually.
         """
         assert isinstance(self._sympy_expr, sympy.Array), "Expression must be an array"
-        variables = ", ".join(v for v in self.vars)
+        variables = ", ".join(self.vars)
         shape = self._sympy_expr.shape
 
         if nb.config.DISABLE_JIT:

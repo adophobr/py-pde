@@ -40,7 +40,7 @@ def napari_process(
         viewer_args (dict):
             Additional arguments passed to the napari viewer
     """
-    logger = logging.getLogger(__name__ + ".napari_process")
+    logger = logging.getLogger(f"{__name__}.napari_process")
 
     try:
         import napari
@@ -114,7 +114,7 @@ def napari_process(
 
                 # update napari view when there is data
                 if update_data is not None:
-                    logger.debug(f"Update napari layer...")
+                    logger.debug("Update napari layer...")
                     layer_data, t = update_data
                     if label is not None:
                         label.setText(f"Time: {t}")

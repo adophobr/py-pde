@@ -86,27 +86,27 @@ def parse_duration(value: str) -> datetime.timedelta:
     Returns:
         datetime.timedelta: An instance representing the duration.
     """
-    match = (
-        standard_duration_re.match(value)
-        or iso8601_duration_re.match(value)
-        or postgres_interval_re.match(value)
-    )
-    if match:
-        kw = match.groupdict()
-        days = datetime.timedelta(float(kw.pop("days", 0) or 0))
-        sign = -1 if kw.pop("sign", "+") == "-" else 1
-        if kw.get("microseconds"):
-            kw["microseconds"] = kw["microseconds"].ljust(6, "0")
-        if (
-            kw.get("seconds")
-            and kw.get("microseconds")
-            and kw["seconds"].startswith("-")
-        ):
-            kw["microseconds"] = "-" + kw["microseconds"]
-        kw = {k: float(v) for k, v in kw.items() if v is not None}
-        return days + sign * datetime.timedelta(**kw)  # type: ignore
-    else:
+    if not (
+        match := (
+            standard_duration_re.match(value)
+            or iso8601_duration_re.match(value)
+            or postgres_interval_re.match(value)
+        )
+    ):
         raise ValueError(f"The time duration {value} cannot be parsed.")
+    kw = match.groupdict()
+    days = datetime.timedelta(float(kw.pop("days", 0) or 0))
+    sign = -1 if kw.pop("sign", "+") == "-" else 1
+    if kw.get("microseconds"):
+        kw["microseconds"] = kw["microseconds"].ljust(6, "0")
+    if (
+        kw.get("seconds")
+        and kw.get("microseconds")
+        and kw["seconds"].startswith("-")
+    ):
+        kw["microseconds"] = "-" + kw["microseconds"]
+    kw = {k: float(v) for k, v in kw.items() if v is not None}
+    return days + sign * datetime.timedelta(**kw)  # type: ignore
 
 
 __all__ = ["parse_duration"]

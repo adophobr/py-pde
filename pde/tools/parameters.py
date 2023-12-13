@@ -90,7 +90,7 @@ class Parameter:
         return {
             "name": str(self.name),
             "default_value": self.convert(),
-            "cls": object.__module__ + "." + self.cls.__name__,
+            "cls": f"{object.__module__}.{self.cls.__name__}",
             "description": self.description,
             "hidden": self.hidden,
             "extra": self.extra,
@@ -120,14 +120,13 @@ class Parameter:
 
         if self.cls is object:
             return value
-        else:
-            try:
-                return self.cls(value)
-            except ValueError:
-                raise ValueError(
-                    f"Could not convert {value!r} to {self.cls.__name__} for parameter "
-                    f"'{self.name}'"
-                )
+        try:
+            return self.cls(value)
+        except ValueError:
+            raise ValueError(
+                f"Could not convert {value!r} to {self.cls.__name__} for parameter "
+                f"'{self.name}'"
+            )
 
 
 class DeprecatedParameter(Parameter):
@@ -264,24 +263,17 @@ class Parameterized:
             include_deprecated (bool):
                 Include deprecated parameters
         """
-        if parameters is None:
-            parameters = {}
-        else:
-            parameters = parameters.copy()  # do not modify the original
-
+        parameters = {} if parameters is None else parameters.copy()
         # obtain all possible parameters
         param_objs = cls.get_parameters(
             include_hidden=allow_hidden, include_deprecated=include_deprecated
         )
 
-        # initialize parameters with default ones from all parent classes
-        result: Dict[str, Any] = {}
-        for name, param_obj in param_objs.items():
-            if not allow_hidden and param_obj.hidden:
-                continue  # skip hidden parameters
-            # take value from parameters or set default value
-            result[name] = param_obj.convert(parameters.pop(name, None))
-
+        result: Dict[str, Any] = {
+            name: param_obj.convert(parameters.pop(name, None))
+            for name, param_obj in param_objs.items()
+            if allow_hidden or not param_obj.hidden
+        }
         # update parameters with the supplied ones
         if check_validity and parameters:
             raise ValueError(
@@ -372,13 +364,10 @@ class Parameterized:
                 "name": param.name,
                 "type": param.cls.__name__,
                 "description": param.description,
+                "value": param.default_value
+                if parameter_values is None
+                else parameter_values[param.name],
             }
-
-            # determine the value to show
-            if parameter_values is None:
-                data["value"] = param.default_value
-            else:
-                data["value"] = parameter_values[param.name]
 
             # print the data to stdout
             if param.cls is object:
@@ -488,19 +477,18 @@ def sphinx_display_parameters(app, what, name, obj, options, lines):
 
             app.connect('autodoc-process-docstring', sphinx_display_parameters)
     """
-    if what == "class" and issubclass(obj, Parameterized):
-        if any(":param parameters:" in line for line in lines):
-            # parse parameters
-            parameters = obj.get_parameters(sort=False)
-            if parameters:
-                lines.append(".. admonition::")
-                lines.append(f"   Parameters of {obj.__name__}:")
-                lines.append("   ")
-                for p in parameters.values():
-                    lines.append(f"   {p.name}")
-                    text = p.description.splitlines()
-                    text.append(f"(Default value: :code:`{p.default_value!r}`)")
-                    text = ["     " + t for t in text]
-                    lines.extend(text)
-                    lines.append("")
+    if what != "class" or not issubclass(obj, Parameterized):
+        return
+    if any(":param parameters:" in line for line in lines):
+        if parameters := obj.get_parameters(sort=False):
+            lines.append(".. admonition::")
+            lines.append(f"   Parameters of {obj.__name__}:")
+            lines.append("   ")
+            for p in parameters.values():
+                lines.append(f"   {p.name}")
+                text = p.description.splitlines()
+                text.append(f"(Default value: :code:`{p.default_value!r}`)")
+                text = [f"     {t}" for t in text]
+                lines.extend(text)
                 lines.append("")
+            lines.append("")

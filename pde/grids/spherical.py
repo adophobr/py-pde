@@ -89,7 +89,7 @@ class SphericalSymGridBase(GridBase, metaclass=ABCMeta):  # lgtm [py/missing-equ
         """
         super().__init__()
         shape_list = _check_shape(shape)
-        if not len(shape_list) == 1:
+        if len(shape_list) != 1:
             raise ValueError(f"`shape` must be a single number, not {shape_list}")
         self._shape: Tuple[int] = (int(shape_list[0]),)
 
@@ -138,10 +138,7 @@ class SphericalSymGridBase(GridBase, metaclass=ABCMeta):  # lgtm [py/missing-equ
     def radius(self) -> Union[float, Tuple[float, float]]:
         """float: radius of the sphere"""
         r_inner, r_outer = self.axes_bounds[0]
-        if r_inner == 0:
-            return r_outer
-        else:
-            return r_inner, r_outer
+        return r_outer if r_inner == 0 else (r_inner, r_outer)
 
     @property
     def volume(self) -> float:
@@ -384,10 +381,7 @@ class SphericalSymGridBase(GridBase, metaclass=ABCMeta):  # lgtm [py/missing-equ
 
         # the distance to the origin is exactly the radial coordinate
         rs = self.axes_coords[0]
-        if ret_angle:
-            return (rs,) + (np.zeros_like(rs),) * (self.dim - 1)
-        else:
-            return rs
+        return (rs,) + (np.zeros_like(rs),) * (self.dim - 1) if ret_angle else rs
 
     @fill_in_docstring
     def get_boundary_conditions(
@@ -423,7 +417,7 @@ class SphericalSymGridBase(GridBase, metaclass=ABCMeta):  # lgtm [py/missing-equ
             # a full boundary instance is given
             return bc
 
-        if bc == "auto_periodic_neumann" or bc == "auto_periodic_neumann":
+        if bc == "auto_periodic_neumann":
             # a simple value is given => use it for the outer boundary
             return Boundaries.from_data(self, "derivative", rank=rank)
         elif bc == "auto_periodic_dirichlet":
@@ -469,7 +463,7 @@ class SphericalSymGridBase(GridBase, metaclass=ABCMeta):  # lgtm [py/missing-equ
             bounds = self.radius / np.sqrt(self.dim)
         elif mode == "inscribed":
             bounds = self.radius / np.sqrt(self.dim)
-        elif mode == "full" or mode == "circumscribed":
+        elif mode in {"full", "circumscribed"}:
             bounds = self.radius
         else:
             raise ValueError(f"Unsupported mode `{mode}`")

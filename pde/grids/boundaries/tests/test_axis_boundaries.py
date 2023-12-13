@@ -55,12 +55,12 @@ def test_get_axis_boundaries():
     for data in ["value", "derivative", "periodic", "anti-periodic"]:
         g = UnitGrid([2], periodic=("periodic" in data))
         b = get_boundary_axis(g, 0, data)
-        assert str(b) == '"' + data + '"'
+        assert str(b) == f'"{data}"'
 
         if "periodic" in data:
             assert b.periodic
-            assert len(list(b)) == 2
             assert b.flip_sign == (data == "anti-periodic")
         else:
             assert not b.periodic
-            assert len(list(b)) == 2
+
+        assert len(list(b)) == 2

@@ -55,8 +55,7 @@ def test_iter_mirror_points():
     assert grid_cart._cache_hash() != grid_cyl._cache_hash() != grid_sph._cache_hash()
 
     for with_, only_periodic in itertools.product([False, True], repeat=2):
-        num_expect = 2 if only_periodic else 8
-        num_expect += 1 if with_ else 0
+        num_expect = (2 if only_periodic else 8) + (1 if with_ else 0)
         ps = grid_cart.iter_mirror_points([1, 1], with_, only_periodic)
         assert len(list(ps)) == num_expect
 

@@ -89,14 +89,13 @@ def extract_field(
         field = fields
     elif callable(source):
         field = source(fields)
+    elif isinstance(fields, FieldCollection):
+        field = fields[source]
     else:
-        if isinstance(fields, FieldCollection):
-            field = fields[source]
-        else:
-            raise TypeError(
-                f"Cannot extract component {source} from instance of "
-                f"{fields.__class__.__name__}"
-            )
+        raise TypeError(
+            f"Cannot extract component {source} from instance of "
+            f"{fields.__class__.__name__}"
+        )
 
     if isinstance(field, FieldCollection):
         raise RuntimeError("Extract field is a collection")
@@ -520,18 +519,11 @@ def plot_magnitudes(
     if quantities is None:
         fields = storage[0]
         assert isinstance(fields, FieldBase), "Storage must contain fields"
-        if fields.label:
-            label_base = fields.label
-        else:
-            label_base = kwargs.get("label", "Field")
-
+        label_base = fields.label if fields.label else kwargs.get("label", "Field")
         if isinstance(fields, FieldCollection):
             quantities = []
             for i, field in enumerate(fields):
-                if field.label:
-                    label = field.label
-                else:
-                    label = label_base + f" {i + 1}"
+                label = field.label if field.label else f"{label_base} {i + 1}"
                 quantities.append({"label": label, "source": i})
         else:
             quantities = [{"label": label_base, "source": None}]
@@ -755,11 +747,7 @@ def plot_kymographs(
     if len(storage) == 0:
         raise RuntimeError("Storage is empty")
     line_data_args = {"scalar": scalar, "extract": extract}
-    if storage.has_collection:
-        num_fields = len(storage[0])  # type: ignore
-    else:
-        num_fields = 1
-
+    num_fields = len(storage[0]) if storage.has_collection else 1
     # prepare the image data for one kymograph
     images = []
     for _, field in storage.items():

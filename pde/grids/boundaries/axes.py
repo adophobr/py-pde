@@ -90,39 +90,30 @@ class Boundaries(list):
             return boundaries
 
         # convert natural boundary conditions if present
-        if boundaries == "natural" or boundaries == "auto_periodic_neumann":
+        if boundaries in ["natural", "auto_periodic_neumann"]:
             # set the respective natural conditions for all axes
             boundaries = []
             for periodic in grid.periodic:
                 if periodic:
                     boundaries.append("periodic")
-                elif rank == 0:
-                    boundaries.append("neumann")
                 else:
                     boundaries.append("neumann")
-
         elif boundaries == "auto_periodic_dirichlet":
             # set the respective natural conditions (with vanishing values) for all axes
             boundaries = []
             for periodic in grid.periodic:
                 if periodic:
                     boundaries.append("periodic")
-                elif rank == 0:
-                    boundaries.append("dirichlet")
                 else:
                     boundaries.append("dirichlet")
-
         elif boundaries == "auto_periodic_curvature":
             # set the respective natural conditions (with vanishing curvature) for all axes
             boundaries = []
             for periodic in grid.periodic:
                 if periodic:
                     boundaries.append("periodic")
-                elif rank == 0:
-                    boundaries.append("curvature")
                 else:
                     boundaries.append("curvature")
-
         # create the list of BoundaryAxis objects
         bcs = None
         if isinstance(boundaries, (str, dict)):
@@ -147,7 +138,7 @@ class Boundaries(list):
         if bcs is None:
             # none of the logic worked
             raise BCDataError(
-                f"Unsupported boundary format: `{boundaries}`. " + cls.get_help()
+                f"Unsupported boundary format: `{boundaries}`. {cls.get_help()}"
             )
 
         return cls(bcs)
@@ -233,8 +224,8 @@ class Boundaries(list):
         # return set_ghost_cells
 
         def chain(
-            fs: Sequence[GhostCellSetter], inner: GhostCellSetter = None
-        ) -> GhostCellSetter:
+                fs: Sequence[GhostCellSetter], inner: GhostCellSetter = None
+            ) -> GhostCellSetter:
             """helper function composing setters of all axes recursively"""
 
             first, rest = fs[0], fs[1:]
@@ -252,9 +243,6 @@ class Boundaries(list):
                     inner(data_full, args=args)  # type: ignore
                     first(data_full, args=args)
 
-            if rest:
-                return chain(rest, wrap)
-            else:
-                return wrap  # type: ignore
+            return chain(rest, wrap) if rest else wrap
 
         return chain(ghost_cell_setters)

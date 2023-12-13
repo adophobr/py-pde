@@ -17,7 +17,7 @@ class PackageConfigDirective(SphinxDirective):
         items = []
 
         for p in c.data.values():
-            description = nodes.paragraph(text=p.description + " ")
+            description = nodes.paragraph(text=f"{p.description} ")
             description += nodes.strong(text=f"(Default value: {c[p.name]!r})")
 
             items += nodes.definition_list_item(

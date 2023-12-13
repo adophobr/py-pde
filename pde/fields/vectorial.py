@@ -562,11 +562,7 @@ class VectorField(DataFieldBase):
             applying the operation
         """
         if scalar == "auto":
-            if self.grid.dim > 1 or np.iscomplexobj(self.data):
-                scalar = "norm"
-            else:
-                scalar = 0  # return the field unchanged
-
+            scalar = "norm" if self.grid.dim > 1 or np.iscomplexobj(self.data) else 0
         if isinstance(scalar, int):
             data = self.data[scalar]
 
@@ -610,18 +606,15 @@ class VectorField(DataFieldBase):
         Returns:
             dict: Information useful for plotting an vector field
         """
-        # TODO: Handle Spherical and Cartesian grids, too. This could be
-        # implemented by adding a get_vector_data method to the grids
-        if self.grid.dim == 2:
-            vx = self[0].get_image_data(**kwargs)
-            vy = self[1].get_image_data(**kwargs)
-            data = vx  # use one of the fields to extract basic information
-            data["data_x"] = vx.pop("data")
-            data["data_y"] = vy["data"]
-            data["title"] = self.label
-
-        else:
+        if self.grid.dim != 2:
             raise NotImplementedError("Only supports 2d grids")
+
+        vx = self[0].get_image_data(**kwargs)
+        vy = self[1].get_image_data(**kwargs)
+        data = vx  # use one of the fields to extract basic information
+        data["data_x"] = vx.pop("data")
+        data["data_y"] = vy["data"]
+        data["title"] = self.label
 
         # transpose the data if requested
         if transpose:

@@ -16,11 +16,10 @@ class TocTreeFilter(TocTree):
         filtered = []
         for e in entries:
             m = self.hasPat.match(e)
-            if m != None:
-                if not m.groups()[0] in excl:
-                    filtered.append(m.groups()[1])
-            else:
+            if m is None:
                 filtered.append(e)
+            elif m.groups()[0] not in excl:
+                filtered.append(m.groups()[1])
         return filtered
 
     def run(self):

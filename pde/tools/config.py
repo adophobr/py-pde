@@ -82,10 +82,7 @@ class Config(collections.UserDict):
     def __getitem__(self, key: str):
         """retrieve item `key`"""
         parameter = self.data[key]
-        if isinstance(parameter, Parameter):
-            return parameter.convert()
-        else:
-            return parameter
+        return parameter.convert() if isinstance(parameter, Parameter) else parameter
 
     def __setitem__(self, key: str, value):
         """update item `key` with `value`"""
@@ -120,7 +117,7 @@ class Config(collections.UserDict):
         Returns:
             dict: A representation of the configuration in a normal :class:`dict`.
         """
-        return {k: v for k, v in self.items()}
+        return dict(self.items())
 
     def __repr__(self) -> str:
         """represent the configuration as a string"""
@@ -191,14 +188,12 @@ def environment() -> Dict[str, Any]:
     from .numba import numba_environment
     from .plotting import get_plotting_context
 
-    result: Dict[str, Any] = {}
-    result["package version"] = package_version
-    result["python version"] = sys.version
-    result["platform"] = sys.platform
-
-    # add the package configuration
-    result["config"] = config.to_dict()
-
+    result: Dict[str, Any] = {
+        "package version": package_version,
+        "python version": sys.version,
+        "platform": sys.platform,
+        "config": config.to_dict(),
+    }
     # add details for mandatory packages
     result["mandatory packages"] = get_package_versions(
         ["matplotlib", "numba", "numpy", "scipy", "sympy"]

@@ -66,7 +66,7 @@ class Cuboid:
 
     @mutable.setter
     def mutable(self, value: bool):
-        self._mutable = bool(value)
+        self._mutable = value
         self.pos.flags.writeable = self._mutable
         self._size.flags.writeable = self._mutable
 
@@ -195,12 +195,11 @@ class Cuboid:
     def buffer(self, amount: FloatNumerical = 0, inplace=False) -> "Cuboid":
         """dilate the cuboid by a certain amount in all directions"""
         amount = np.asarray(amount)
-        if inplace:
-            self.pos -= amount
-            self.size += 2 * amount
-            return self
-        else:
+        if not inplace:
             return self.__class__(self.pos - amount, self.size + 2 * amount)
+        self.pos -= amount
+        self.size += 2 * amount
+        return self
 
     def contains_point(self, points: np.ndarray) -> np.ndarray:
         """returns a True when `points` are within the Cuboid

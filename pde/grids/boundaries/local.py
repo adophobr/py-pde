@@ -362,7 +362,7 @@ class BCBase(metaclass=ABCMeta):
             boundary_class = cls._conditions[condition]
         except KeyError:
             raise BCDataError(
-                f"Boundary condition `{condition}` not defined. " + cls.get_help()
+                f"Boundary condition `{condition}` not defined. {cls.get_help()}"
             )
 
         # create the actual class
@@ -390,7 +390,7 @@ class BCBase(metaclass=ABCMeta):
         data = data.copy()  # need to make a copy since we modify it below
 
         # parse all possible variants that could be given
-        if "type" in data.keys():
+        if "type" in data:
             # type is given (optionally with a value)
             b_type = data.pop("type")
             b_value = data.pop("value", 0)
@@ -401,7 +401,7 @@ class BCBase(metaclass=ABCMeta):
 
         else:
             raise BCDataError(
-                f"Boundary conditions `{str(list(data.keys()))}` are not supported."
+                f"Boundary conditions `{list(data.keys())}` are not supported."
             )
 
         # initialize the boundary class with all remaining values forwarded
@@ -450,9 +450,7 @@ class BCBase(metaclass=ABCMeta):
             return cls.from_str(grid, axis, upper=upper, condition=data, rank=rank)
 
         else:
-            raise BCDataError(
-                f"Unsupported boundary format: `{data}`. " + cls.get_help()
-            )
+            raise BCDataError(f"Unsupported boundary format: `{data}`. {cls.get_help()}")
 
     def check_value_rank(self, rank: int) -> None:
         """check whether the values at the boundaries have the correct rank
@@ -993,18 +991,17 @@ class ConstBCBase(BCBase):
             return [f"value={self.value!r}"]
 
     def __str__(self):
-        if hasattr(self, "names"):
-            if np.array_equal(self.value, 0):
-                return f'"{self.names[0]}"'
-            elif self.value_is_linked:
-                return (
-                    f'{{"type": "{self.names[0]}", '
-                    f'"value": <linked: {self.value.ctypes.data}>}}'
-                )
-            else:
-                return f'{{"type": "{self.names[0]}", "value": {self.value}}}'
-        else:
+        if not hasattr(self, "names"):
             return self.__repr__()
+        if np.array_equal(self.value, 0):
+            return f'"{self.names[0]}"'
+        elif self.value_is_linked:
+            return (
+                f'{{"type": "{self.names[0]}", '
+                f'"value": <linked: {self.value.ctypes.data}>}}'
+            )
+        else:
+            return f'{{"type": "{self.names[0]}", "value": {self.value}}}'
 
     @fill_in_docstring
     def _parse_value(self, value: Union[float, np.ndarray, str]) -> np.ndarray:
@@ -1275,28 +1272,22 @@ class ConstBC1stOrderBase(ConstBCBase):
 
             @nb.jit
             def virtual_point(
-                arr: np.ndarray, idx: Tuple[int, ...], args=None
-            ) -> float:
+                        arr: np.ndarray, idx: Tuple[int, ...], args=None
+                    ) -> float:
                 """evaluate the virtual point at `idx`"""
                 arr_1d, _, _ = get_arr_1d(arr, idx)
-                if normal:
-                    val_field = arr_1d[..., axis, index]
-                else:
-                    val_field = arr_1d[..., index]
+                val_field = arr_1d[..., axis, index] if normal else arr_1d[..., index]
                 return const() + factor() * val_field  # type: ignore
 
         else:
 
             @nb.jit
             def virtual_point(
-                arr: np.ndarray, idx: Tuple[int, ...], args=None
-            ) -> float:
+                        arr: np.ndarray, idx: Tuple[int, ...], args=None
+                    ) -> float:
                 """evaluate the virtual point at `idx`"""
                 arr_1d, _, bc_idx = get_arr_1d(arr, idx)
-                if normal:
-                    val_field = arr_1d[..., axis, index]
-                else:
-                    val_field = arr_1d[..., index]
+                val_field = arr_1d[..., axis, index] if normal else arr_1d[..., index]
                 return const()[bc_idx] + factor()[bc_idx] * val_field  # type: ignore
 
         return virtual_point  # type: ignore
@@ -1457,19 +1448,18 @@ class _PeriodicBC(ConstBC1stOrderBase):
 
         if not compiled:
             return (0.0, value, index)
-        else:
-            const = np.array(0, np.double)
-            factor = np.array(value, np.double)
+        const = np.array(0, np.double)
+        factor = np.array(value, np.double)
 
-            @register_jitable(inline="always")
-            def const_func():
-                return const
+        @register_jitable(inline="always")
+        def const_func():
+            return const
 
-            @register_jitable(inline="always")
-            def factor_func():
-                return factor
+        @register_jitable(inline="always")
+        def factor_func():
+            return factor
 
-            return (const_func, factor_func, index)
+        return (const_func, factor_func, index)
 
 
 class DirichletBC(ConstBC1stOrderBase):
@@ -1735,10 +1725,7 @@ class MixedBC(ConstBC1stOrderBase):
                 const = np.empty_like(value)
                 for i in range(value.size):
                     val = value.flat[i]
-                    if np.isinf(val):
-                        const.flat[i] = 0
-                    else:
-                        const.flat[i] = 2 * dx * const_val / (2 + dx * val)
+                    const.flat[i] = 0 if np.isinf(val) else 2 * dx * const_val / (2 + dx * val)
                 return const
 
             @register_jitable(inline="always")
@@ -1747,10 +1734,7 @@ class MixedBC(ConstBC1stOrderBase):
                 factor = np.empty_like(value)
                 for i in range(value.size):
                     val = value.flat[i]
-                    if np.isinf(val):
-                        factor.flat[i] = -1
-                    else:
-                        factor.flat[i] = (2 - dx * val) / (2 + dx * val)
+                    factor.flat[i] = -1 if np.isinf(val) else (2 - dx * val) / (2 + dx * val)
                 return factor
 
         else:
@@ -2060,10 +2044,7 @@ class CurvatureBC(ConstBC2ndOrderBase):
         value = np.asarray(self.value * dx**2)
         f1 = np.full_like(value, 2.0)
         f2 = np.full_like(value, -1.0)
-        if self.upper:
-            i1, i2 = size - 1, size - 2
-        else:
-            i1, i2 = 0, 1
+        i1, i2 = (size - 1, size - 2) if self.upper else (0, 1)
         return (value, f1, i1, f2, i2)
 
 
@@ -2094,4 +2075,4 @@ def registered_boundary_condition_names() -> Dict[str, Type[BCBase]]:
     Returns:
         dict: a dictionary with the names of the boundary conditions that can be used
     """
-    return {cls_name: cls for cls_name, cls in BCBase._conditions.items()}
+    return dict(BCBase._conditions.items())

@@ -171,7 +171,8 @@ def hash_readable(obj) -> str:
     )
     if isinstance(obj, mappings):
         hash_str = ", ".join(
-            hash_readable(k) + ": " + hash_readable(v) for k, v in sorted(obj.items())
+            f"{hash_readable(k)}: {hash_readable(v)}"
+            for k, v in sorted(obj.items())
         )
         return "{" + hash_str + "}"
 
@@ -180,11 +181,7 @@ def hash_readable(obj) -> str:
 
     # otherwise, assume it's a generic object
     try:
-        if hasattr(obj, "__getstate__"):
-            data = obj.__getstate__()
-        else:
-            data = obj.__dict__
-
+        data = obj.__getstate__() if hasattr(obj, "__getstate__") else obj.__dict__
     except AttributeError:
         # strange object without a dictionary attached to it
         return repr(obj)
@@ -192,7 +189,7 @@ def hash_readable(obj) -> str:
     else:
         # turn arguments into something readable
         args = ", ".join(
-            str(k) + "=" + hash_readable(v)
+            f"{str(k)}={hash_readable(v)}"
             for k, v in sorted(data.items())
             if not k.startswith("_")
         )
@@ -241,7 +238,7 @@ def make_serializer(method: str) -> Callable:
 
         return lambda s: yaml.dump(s).encode("utf-8")
 
-    raise ValueError("Unknown serialization method `%s`" % method)
+    raise ValueError(f"Unknown serialization method `{method}`")
 
 
 def make_unserializer(method: str) -> Callable:
@@ -283,7 +280,7 @@ def make_unserializer(method: str) -> Callable:
 
         return yaml.unsafe_load
 
-    raise ValueError("Unknown serialization method `%s`" % method)
+    raise ValueError(f"Unknown serialization method `{method}`")
 
 
 class DictFiniteCapacity(collections.OrderedDict):
@@ -339,11 +336,7 @@ class SerializedDict(collections.abc.MutableMapping):
                 storage mechanism, e.g., storage_dict = PersistentDict()
         """
         # initialize the dictionary that actually stores the data
-        if storage_dict is None:
-            self._data = {}
-        else:
-            self._data = storage_dict
-
+        self._data = {} if storage_dict is None else storage_dict
         # define the methods that serialize and unserialize the data
         self.serialize_key = make_serializer(key_serialization)
         self.unserialize_key = make_unserializer(key_serialization)
@@ -540,10 +533,7 @@ class _class_cache:
                     # the cache dictionary is not even present
                     obj._cache_methods = {}
                 # create cache using the right factory method
-                if self.factory is None:
-                    cache = {}
-                else:
-                    cache = getattr(obj, self.factory)(self.name)
+                cache = {} if self.factory is None else getattr(obj, self.factory)(self.name)
                 # store the cache in the dictionary
                 obj._cache_methods[self.name] = cache
 

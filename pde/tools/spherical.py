@@ -190,10 +190,11 @@ def surface_from_radius(radius: TNumArr, dim: int) -> TNumArr:
         float or :class:`~numpy.ndarray`: Surface area of the sphere
     """
     if dim == 1:
-        if isinstance(radius, np.ndarray):
-            return np.broadcast_to(2, radius.shape)
-        else:
-            return 2
+        return (
+            np.broadcast_to(2, radius.shape)
+            if isinstance(radius, np.ndarray)
+            else 2
+        )
     elif dim == 2:
         return 2 * π * radius
     elif dim == 3:
@@ -240,10 +241,7 @@ def make_surface_from_radius_compiled(dim: int) -> Callable[[TNumArr], TNumArr]:
         if nb.config.DISABLE_JIT:
             # jitting is disabled => return generic python function
             def surface_from_radius(radius: TNumArr) -> TNumArr:
-                if isinstance(radius, np.ndarray):
-                    return np.full(radius.shape, 2)
-                else:
-                    return 2
+                return np.full(radius.shape, 2) if isinstance(radius, np.ndarray) else 2
 
         else:
             # jitting is enabled => return specific compiled functions
@@ -611,7 +609,7 @@ def spherical_index_count(l: int) -> int:
     Returns:
         int: The number of modes
     """
-    return 1 + 2 * l + l * l
+    return 1 + 2 * l + l**2
 
 
 def spherical_index_count_optimal(k_count: int) -> bool:
@@ -620,8 +618,7 @@ def spherical_index_count_optimal(k_count: int) -> bool:
     Args:
         k_count (int): The number of modes considered
     """
-    is_square = bool(int(np.sqrt(k_count) + 0.5) ** 2 == k_count)
-    return is_square
+    return int(np.sqrt(k_count) + 0.5) ** 2 == k_count
 
 
 def spherical_harmonic_symmetric(degree: int, θ: float) -> float:

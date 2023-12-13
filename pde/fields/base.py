@@ -769,7 +769,7 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         result = f"{class_name}(grid={self.grid!r}, data={self.data}"
         if self.label:
             result += f', label="{self.label}"'
-        return result + ")"
+        return f"{result})"
 
     def __str__(self) -> str:
         """return instance as string"""
@@ -779,7 +779,7 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         )
         if self.label:
             result += f', label="{self.label}"'
-        return result + ")"
+        return f"{result})"
 
     @classmethod
     def random_uniform(
@@ -1101,13 +1101,10 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         Returns:
             dict: The unserialized attributes
         """
-        results = {}
-        for key, value in attributes.items():
-            if key == "grid":
-                results[key] = GridBase.from_state(value)
-            else:
-                results[key] = json.loads(value)
-        return results
+        return {
+            key: GridBase.from_state(value) if key == "grid" else json.loads(value)
+            for key, value in attributes.items()
+        }
 
     def _write_to_image(self, filename: str, **kwargs):
         r"""write data to image
@@ -1126,11 +1123,11 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         """
         import matplotlib.pyplot as plt
 
-        # obtain image data
-        get_image_args = {}
-        for key in ["performance_goal", "scalar"]:
-            if key in kwargs:
-                get_image_args[key] = kwargs.pop(key)
+        get_image_args = {
+            key: kwargs.pop(key)
+            for key in ["performance_goal", "scalar"]
+            if key in kwargs
+        }
         img = self.get_image_data(**get_image_args)
 
         kwargs.setdefault("cmap", "gray")
@@ -1193,11 +1190,7 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         )
 
         # determine under which conditions the axes can be squeezed
-        if grid_dim == 1:
-            scalar_dim = 0
-        else:
-            scalar_dim = 1
-
+        scalar_dim = 0 if grid_dim == 1 else 1
         # introduce wrapper function to process arrays
         def interpolator(point: np.ndarray, **kwargs) -> NumberOrArray:
             """return the interpolated value at the position `point`"""
@@ -1853,13 +1846,11 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
         line_data = self.get_line_data(scalar=scalar, extract=extract)
 
         line2d = reference.element
-        if isinstance(line2d, mpl.lines.Line2D):
-            # update old plot
-            line2d.set_xdata(line_data["data_x"])
-            line2d.set_ydata(line_data["data_y"].real)
-
-        else:
+        if not isinstance(line2d, mpl.lines.Line2D):
             raise ValueError(f"Unsupported plot reference {reference}")
+        # update old plot
+        line2d.set_xdata(line_data["data_x"])
+        line2d.set_ydata(line_data["data_y"].real)
 
     def _plot_image(
         self,
@@ -1893,11 +1884,11 @@ class DataFieldBase(FieldBase, metaclass=ABCMeta):
             :class:`PlotReference`: Instance that contains information to update
             the plot with new data later.
         """
-        # obtain image data with appropriate parameters
-        data_kws = {}
-        for arg in ["performance_goal", "scalar", "transpose"]:
-            if arg in kwargs:
-                data_kws[arg] = kwargs.pop(arg)
+        data_kws = {
+            arg: kwargs.pop(arg)
+            for arg in ["performance_goal", "scalar", "transpose"]
+            if arg in kwargs
+        }
         data = self.get_image_data(scalar, transpose, **data_kws)
 
         if ax is None:

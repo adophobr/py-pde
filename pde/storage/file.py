@@ -123,10 +123,7 @@ class FileStorage(StorageBase):
         else:
             kwargs = {}
 
-        if self._max_length:
-            shape = (self._max_length,) + shape
-            return self._file.create_dataset(name, shape=shape, dtype=dtype, **kwargs)
-        else:
+        if not self._max_length:
             return self._file.create_dataset(
                 name,
                 shape=(0,) + shape,
@@ -134,6 +131,8 @@ class FileStorage(StorageBase):
                 maxshape=(None,) + shape,
                 **kwargs,
             )
+        shape = (self._max_length,) + shape
+        return self._file.create_dataset(name, shape=shape, dtype=dtype, **kwargs)
 
     def _open(self, mode: str = "reading", info: InfoDict = None) -> None:
         """open the hdf file in a particular mode
@@ -239,11 +238,7 @@ class FileStorage(StorageBase):
         except OSError:
             length = 0
 
-        if self._data_length is None:
-            return length
-        else:
-            # size of stored data is smaller since preallocation was used
-            return min(length, self._data_length)
+        return length if self._data_length is None else min(length, self._data_length)
 
     @property
     def times(self):
@@ -305,7 +300,7 @@ class FileStorage(StorageBase):
 
         # delete data if truncation is requested. This is for instance necessary
         # to remove older data with incompatible data_shape
-        if self.write_mode == "truncate" or self.write_mode == "truncate_once":
+        if self.write_mode in ["truncate", "truncate_once"]:
             self.clear(clear_data_shape=True)
 
         # initialize the writing, setting current data shape
@@ -361,12 +356,8 @@ class FileStorage(StorageBase):
             self._data.resize((self._data_length + 1,) + self.data_shape)
         self._data[self._data_length] = data
 
-        # write the new time
         if time is None:
-            if len(self._times) == 0:
-                time = 0
-            else:
-                time = self._times[self._data_length - 1] + 1
+            time = 0 if len(self._times) == 0 else self._times[self._data_length - 1] + 1
         if self._data_length >= len(self._times):
             self._times.resize((self._data_length + 1,))
         self._times[self._data_length] = time

@@ -18,11 +18,7 @@ def test_storage_persistence(collection, tmp_path):
     grid = UnitGrid([dim])
     scalar = ScalarField(grid)
     vector = pde.VectorField(grid)
-    if collection:
-        state = pde.FieldCollection([scalar, vector])
-    else:
-        state = scalar
-
+    state = pde.FieldCollection([scalar, vector]) if collection else scalar
     def assert_storage_content(storage, expect):
         """helper function testing storage content"""
         if collection:

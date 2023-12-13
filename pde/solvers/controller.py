@@ -174,11 +174,7 @@ class Controller:
             dt = self.solver.info.get("dt")
             # Note that self.solver.info['dt'] might be None
 
-        if dt is None:
-            atol = 1e-12
-        else:
-            atol = 0.1 * dt
-
+        atol = 1e-12 if dt is None else 0.1 * dt
         # evolve the system from t_start to t_end
         t = t_start
         self._logger.debug(f"Start simulation at t={t}")
